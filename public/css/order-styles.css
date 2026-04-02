@@ -1,0 +1,274 @@
+
+        aside.fi-sidebar {
+            display: none !important;
+        }
+
+        .fi-main {
+            margin-inline-start: 0 !important;
+        }
+
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+@keyframes slideIn {
+    from { transform: translateY(-10px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.order-card {
+    animation: slideIn 0.3s ease-out;
+    transition: all 0.3s ease;
+}
+
+.order-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+.status-badge {
+    animation: pulse 2s infinite;
+}
+
+.main-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+    padding: 1rem;
+}
+
+@media (min-width: 768px) {
+    .main-container {
+        padding: 1.5rem;
+    }
+}
+
+.sections-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    height: 100%;
+}
+
+@media (min-width: 1024px) {
+    .sections-wrapper {
+        flex-direction: row;
+    }
+}
+
+.section {
+    width: 100%;
+}
+
+@media (min-width: 1024px) {
+    .section {
+        width: 50%;
+    }
+}
+
+.section-container {
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    border: 1px solid #e5e7eb;
+    height: 100%;
+    overflow: hidden;
+}
+
+.section-header {
+    padding: 1.5rem;
+    color: white;
+}
+
+.pending-header {
+    background: linear-gradient(90deg, #f97316 0%, #ef4444 100%);
+}
+
+.completed-header {
+    background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+}
+
+.header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.icon-container {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.75rem;
+    border-radius: 50%;
+}
+
+.icon {
+    width: 1.5rem;
+    height: 1.5rem;
+    fill: currentColor;
+}
+
+.section-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin: 0;
+}
+
+.count-badge {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+}
+
+.count-text {
+    font-size: 1.125rem;
+    font-weight: bold;
+}
+
+.section-content {
+    padding: 1.5rem;
+    overflow-y: auto;
+    max-height: calc(100vh - 250px);
+}
+
+.cards-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+@media (min-width: 768px) {
+    .cards-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.order-card {
+    border-radius: 0.75rem;
+    padding: 1rem;
+    border: 2px solid;
+    transition: all 0.3s ease;
+}
+
+.pending-card {
+    background: linear-gradient(135deg, #fef3c7 0%, #fecaca 100%);
+    border-color: #fed7aa;
+}
+
+.pending-card:hover {
+    border-color: #fdba74;
+}
+
+.completed-card {
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    border-color: #bbf7d0;
+}
+
+.completed-card:hover {
+    border-color: #86efac;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.order-id {
+    font-size: 1.125rem;
+    font-weight: bold;
+}
+
+.pending-id {
+    color: #9a3412;
+}
+
+.completed-id {
+    color: #14532d;
+}
+
+.status-badge {
+    font-size: 0.75rem;
+    font-weight: bold;
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
+    color: white;
+}
+
+.pending-badge {
+    background: linear-gradient(90deg, #f97316 0%, #ef4444 100%);
+}
+
+.completed-badge {
+    background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+}
+
+.card-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.info-row {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(4px);
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid;
+}
+
+.pending-info {
+    border-color: #fed7aa;
+}
+
+.completed-info {
+    border-color: #bbf7d0;
+}
+
+.info-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.info-label {
+    color: #4b5563;
+    font-weight: 500;
+    font-size: 0.875rem;
+}
+
+.info-value {
+    font-weight: bold;
+    color: #1f2937;
+    font-size: 0.875rem;
+}
+
+.card-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.empty-state {
+    grid-column: span 2;
+    text-align: center;
+    padding: 4rem 0;
+}
+
+.empty-icon {
+    font-size: 5rem;
+    margin-bottom: 1.5rem;
+    opacity: 0.5;
+}
+
+.empty-text {
+    font-size: 1.25rem;
+    color: #6b7280;
+    font-weight: 500;
+}

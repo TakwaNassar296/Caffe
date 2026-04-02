@@ -1,0 +1,114 @@
+<?php
+
+namespace App\Http\Controllers\Api\Driver;
+
+use App\Models\Driver;
+use App\Models\DriverOtp;
+use App\Support\PhoneNumber;
+use App\Traits\ApiResponse;
+use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\Driver\RegisterStep1Request;
+use App\Http\Requests\Api\Driver\RegisterStep2Request;
+use App\Http\Requests\Api\Driver\RegisterStep3Request;
+use App\Http\Requests\Api\Driver\RegisterStep4Request;
+
+class DriverRegisterController extends Controller
+{
+    use ApiResponse;
+
+    public function registerStep1(RegisterStep1Request $request)
+    {
+        $data = $request->validated();
+        $data['phone_number'] = PhoneNumber::normalize(
+            $request->string('phone_number')->toString(),
+            $request->string('country_key')->toString(),
+        );
+
+        if (Driver::where('email', $request['email'])->exists()) {
+            return $this->errorResponse(__('apis.email_exists'));
+        }
+
+        if ($request->hasFile('profile_image')) {
+            $data['profile_image'] = $request->file('profile_image')->store('drivers/profile_images', 'public');
+        }
+
+        Driver::updateOrCreate(
+            ['email' => $request['email']],
+            $data
+        );
+
+        return $this->successResponse(__('apis.step1_success'));
+    }
+
+    public function registerStep2(RegisterStep2Request $request)
+    {
+        $driver = Driver::where('email', $request->email)->first();
+
+        if (!$driver) {
+            return $this->errorResponse(__('apis.step1_required'));
+        }
+
+        $data = $request->validated();
+
+        if ($request->hasFile('vehicle_registration_document')) {
+            $data['vehicle_registration_document'] = $request->file('vehicle_registration_document')->store('drivers/vehicle_registration', 'public');
+        }
+        if ($request->hasFile('vehicle_insurance_document')) {
+            $data['vehicle_insurance_document'] = $request->file('vehicle_insurance_document')->store('drivers/vehicle_insurance', 'public');
+        }
+
+        $driver->update($data);
+
+        return $this->successResponse(__('apis.step2_success'));
+    }
+
+    public function registerStep3(RegisterStep3Request $request)
+    {
+        $driver = Driver::where('email', $request['email'])->first();
+
+        if (!$driver) {
+            return $this->errorResponse(__('apis.step1_required'));
+        }
+
+        $data = $request->validated();
+
+        if ($request->hasFile('driving_license_photo')) {
+            $data['driving_license_photo'] = $request->file('driving_license_photo')->store('drivers/driving_license', 'public');
+        }
+
+        $driver->update($data);
+
+        return $this->successResponse(__('apis.step3_success'));
+    }
+
+    public function registerStep4(RegisterStep4Request $request)
+    {
+        $driver = Driver::where('email', $request['email'])->first();
+
+        if (!$driver) {
+            return $this->errorResponse(__('apis.step1_required'));
+        }
+
+        $request['status'] = "pending";
+        $driver->update($request->validated());
+
+        $driver->status = "pending";
+        $driver->save();
+
+        $this->sendOtp($driver);
+
+        return $this->successResponse(__('apis.driver_registered_success'));
+    }
+
+    private function sendOtp($driver)
+    {
+        // $otp = $driver->generate_code_otp;
+
+        DriverOtp::create([
+            'driver_id' => $driver->id,
+            'otp' => '4444',
+            'last_resend' => now(),
+        ]);
+    }
+}

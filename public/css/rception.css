@@ -1,0 +1,202 @@
+ .container {
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px 30px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 25px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .card h2 {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            color: #2d3748;
+        }
+
+        .card p {
+            color: #718096;
+            margin-bottom: 30px;
+            line-height: 1.6;
+            font-size: 1.1rem;
+        }
+
+        .card-button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 35px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .card-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        /* Card 1 - استقبال الطلبات */
+        .card-receive::before {
+            background: linear-gradient(90deg, #2563eb, #1d4ed8);
+        }
+
+        .card-receive .card-icon {
+            background: linear-gradient(45deg, #2563eb, #1d4ed8);
+        }
+
+        .card-receive:hover .card-icon {
+            transform: rotate(10deg) scale(1.1);
+        }
+
+        /* Card 2 - رفض الطلبات */
+        .card-reject::before {
+            background: linear-gradient(90deg, #dc2626, #b91c1c);
+        }
+
+        .card-reject .card-icon {
+            background: linear-gradient(45deg, #dc2626, #b91c1c);
+        }
+
+        .card-reject:hover .card-icon {
+            transform: rotate(-10deg) scale(1.1);
+        }
+
+        .card-reject .card-button {
+            background: linear-gradient(45deg, #dc2626, #b91c1c);
+        }
+
+        .card-reject .card-button:hover {
+            box-shadow: 0 10px 25px rgba(220, 38, 38, 0.4);
+        }
+
+        /* Card 3 - مواد مهدر */
+        .card-waste::before {
+            background: linear-gradient(90deg, #f59e0b, #d97706);
+        }
+
+        .card-waste .card-icon {
+            background: linear-gradient(45deg, #f59e0b, #d97706);
+        }
+
+        .card-waste:hover .card-icon {
+            transform: rotate(10deg) scale(1.1);
+        }
+
+        .card-waste .card-button {
+            background: linear-gradient(45deg, #f59e0b, #d97706);
+        }
+
+        .card-waste .card-button:hover {
+            box-shadow: 0 10px 25px rgba(245, 158, 11, 0.4);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .cards-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .card {
+                padding: 30px 20px;
+            }
+
+            .card h2 {
+                font-size: 1.5rem;
+            }
+
+            .card p {
+                font-size: 1rem;
+            }
+        }
+
+        /* Additional Animation */
+        .card {
+            animation: fadeInUp 0.6s ease;
+        }
+
+        .card:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .card:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
