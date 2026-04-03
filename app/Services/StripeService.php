@@ -18,8 +18,8 @@ class StripeService
     public function __construct()
     {
         // TODO : Make config file
-        $this->secretKey     = config('services.stripe.secret',);
-        $this->webhookSecret = config('services.stripe.webhook_secret',git );
+        $this->secretKey     = config('services.stripe.secret');
+        $this->webhookSecret = config('services.stripe.webhook_secret');
 
         \Stripe\Stripe::setApiKey($this->secretKey);
         $this->stripe = new StripeClient($this->secretKey);

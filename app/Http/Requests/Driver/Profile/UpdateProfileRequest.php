@@ -27,7 +27,7 @@ class UpdateProfileRequest extends FormRequest
             'last_name'  => 'required|required|string|max:255|min:3',
             'phone_number'      => 'required|string|max:20|min:8|unique:drivers,phone_number,' . auth('driver')->id(),
             'image'      => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-            'new_password' => 'nullable|min:6|max:255|string',
+            'new_password' => 'nullable|min:8|max:255|string',
         ];
     }
 

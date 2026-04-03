@@ -21,6 +21,7 @@ class AuthController extends Controller
         $request->validate([
             'email' => 'required|email',
             'password' => 'required|string|min:6',
+            'fcm_token' => 'nullable|string',
         ]);
 
         $admin = Admin::where('email', $request->email)
@@ -29,6 +30,12 @@ class AuthController extends Controller
 
         if (!$admin || !Hash::check($request->password, $admin->password)) {
             return $this->errorResponse('Invalid credentials.', 401);
+        }
+
+        if ($request->has('fcm_token')) {
+            $admin->update([
+                'fcm_token' => $request->fcm_token
+            ]);
         }
 
         // Revoke previous tokens

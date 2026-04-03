@@ -28,6 +28,7 @@ class Admin extends Authenticatable implements FilamentUser
         'super_admin',
         "branch_id",
         'total_points',
+        'fcm_token'
     ];
       protected function casts(): array
     {

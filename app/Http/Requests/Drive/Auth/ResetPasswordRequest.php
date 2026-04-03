@@ -25,6 +25,7 @@ class ResetPasswordRequest extends FormRequest
     {
         return [
             'country_key' => 'nullable|string|max:6',
+            'otp'   => 'required|string|max:4|min:4|exists:driver_otps,otp',
             'phone_number' => 'required|string|max:20|min:4',
             'new_password' => 'required|min:8|max:255|confirmed',
         ];

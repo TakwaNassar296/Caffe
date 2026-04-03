@@ -2,7 +2,6 @@
 
 namespace App\Filament\Pages;
 
-use App\Models\User;
 use App\Models\Admin;
 use App\Services\FirebaseNotificationService;
 use App\Notifications\NotificationAdmin;
@@ -13,7 +12,8 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Form;
 use Filament\Pages\Page;
 use Filament\Notifications\Notification as FilamentNotification;
-use Illuminate\Support\Facades\Notification as NotificationFacade; 
+use Illuminate\Support\Facades\Notification as NotificationFacade;
+
 class Notification extends Page
 {
     use InteractsWithActions, InteractsWithForms;
@@ -57,8 +57,7 @@ class Notification extends Page
 
                 Checkbox::make('sendToAllAdmins')
                     ->label(__('admin.send_to_all_admins'))
-                    ->default(true)
-                    ->helperText(__('admin.send_notification_to_all_admins')), 
+                    ->default(true), 
             ]);
     }
 
@@ -66,22 +65,19 @@ class Notification extends Page
     {
         try {
             $data = $this->form->getState();
-            $text = $data['template'];
-            $sendToAllAdmins = $data['sendToAllAdmins'] ?? false;
-
-            // Send to all users via Firebase
+            
             $this->firebaseNotificationService->sendNotification(
-                'New Notification',
-                $text,
-                null,
+                __('admin.new_notification'),
+                $data['template'],
+                'all',
                 true
             );
 
-            // Send database notifications to all admins if super admin
-            if ($sendToAllAdmins && auth('admin')->user()?->super_admin == 1) {
-                $allAdmins = Admin::all();
-                if ($allAdmins->isNotEmpty()) {
-                    NotificationFacade::send($allAdmins, new NotificationAdmin(null, $text, __('admin.notification')));
+            if ($data['sendToAllAdmins'] ?? false) {
+                $superAdmins = Admin::where('super_admin', 1)->get();
+                
+                if ($superAdmins->isNotEmpty()) {
+                    NotificationFacade::send($superAdmins, new NotificationAdmin(null, $data['template'], __('admin.notification')));
                 }
             }
 
@@ -89,6 +85,9 @@ class Notification extends Page
                 ->title(__('admin.notification_sent_successfully'))
                 ->success()
                 ->send();
+
+            $this->form->fill();
+
         } catch (\Exception $e) {
             FilamentNotification::make()
                 ->title(__('admin.notification_send_failed'))
@@ -102,5 +101,4 @@ class Notification extends Page
     {
         return auth('admin')->user()?->super_admin == 1;
     }
-    
 }

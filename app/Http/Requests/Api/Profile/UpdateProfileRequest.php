@@ -30,7 +30,7 @@ class UpdateProfileRequest extends FormRequest
             'country_key' => 'required|string|max:6',
             'phone_number' => 'required|string|max:20|min:4|unique:users,phone_number,' . auth('user')->id(),
             'image'      => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-            'new_password' => 'nullable|min:6|max:255|string',
+            'new_password' => 'nullable|min:8|max:255|string',
         ];
     }
 

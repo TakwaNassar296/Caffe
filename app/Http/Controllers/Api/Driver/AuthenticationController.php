@@ -15,7 +15,6 @@ use App\Services\TwilioService;
 use App\Support\PhoneNumber;
 use App\Traits\ApiResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 
@@ -25,25 +24,22 @@ class AuthenticationController extends Controller
 
     protected $twilio;
 
-
     public function __construct(TwilioService $twilio)
     {
         $this->twilio = $twilio;
     }
 
-    public function login(LoginRequest  $request)
+    public function login(LoginRequest $request)
     {
         $phoneNumber = PhoneNumber::normalize(
             $request->string('phone_number')->toString(),
             $request->string('country_key')->toString(),
         );
 
-        $driver = Driver::where('phone_number', $phoneNumber)
-            ->orWhere('phone_number', $request['phone_number'])
-            ->first();
+        $driver = Driver::where('phone_number', $phoneNumber)->first();
 
-        if (!$driver) {
-            return $this->errorResponse(__('apis.driver_not_found'), 401);
+        if (!$driver || !Hash::check($request['password'], $driver->password)) {
+            return $this->errorResponse(__('apis.invalid_credentials'), 401);
         }
 
         if (!$driver->account_verified_at) {
@@ -54,16 +50,17 @@ class AuthenticationController extends Controller
             return $this->errorResponse(__('apis.driver_not_accepted'), 403);
         }
 
-        if (!$driver || !Hash::check($request['password'], $driver->password)) {
-            return $this->errorResponse(__('apis.invalid_credentials'), 401);
-        }
-
         if ($request['fcm_token']) {
-            $driver->fcm_token = $request['fcm_token'];
-            $driver->save();
+            $driver->update(['fcm_token' => $request['fcm_token']]);
         }
 
-        return $this->successResponse(__('apis.login_success'), new DriverResource($driver), 200);
+        $token = $driver->createToken('driver_token')->plainTextToken;
+
+        return $this->successResponse(__('apis.login_success'), [
+            'driver' => new DriverResource($driver),
+            'access_token' => $token,
+            'token_type' => 'Bearer',
+        ], 200);
     }
 
     public function verifyOtp(VerifOtpRequest $request)
@@ -73,28 +70,24 @@ class AuthenticationController extends Controller
             $request->string('country_key')->toString(),
         );
 
-        $driver = Driver::where('phone_number', $phoneNumber)
-            ->orWhere('phone_number', $request['phone_number'])
-            ->first();
+        $driver = Driver::where('phone_number', $phoneNumber)->first();
+
 
         if (!$driver) {
             return $this->errorResponse(__('apis.driver_not_found'), 404);
         }
 
-        $latestOtp = DriverOtp::where('driver_id', $driver->id)
-            ->latest()->first();
+        $latestOtp = DriverOtp::where('driver_id', $driver->id)->latest()->first();
 
-        if (!$latestOtp || $latestOtp->otp !== $request['otp']) {
+        if (!$latestOtp || $latestOtp->otp === null || $latestOtp->otp !== $request['otp']) {
             return $this->errorResponse(__('apis.invalid_otp'));
         }
 
         $latestOtp->update(['otp' => null]);
-        $driver->account_verified_at = now();
-        $driver->save();
+        $driver->update(['account_verified_at' => now()]);
 
         return $this->successResponse(__('apis.phone_verified_wait'), []);
     }
-
 
     public function resendOtp(ForgetPasswordRequest $request)
     {
@@ -103,30 +96,21 @@ class AuthenticationController extends Controller
             $request->string('country_key')->toString(),
         );
 
-        $driver = Driver::where(function ($query) use ($phoneNumber, $request) {
-            $query->where('phone_number', $phoneNumber)
-                ->orWhere('phone_number', $request['phone_number']);
-        })->where('status', 'pending')->first();
+        $driver = Driver::where('phone_number', $phoneNumber)->first();
 
-        if (!$driver) {
-            return $this->errorResponse(__('apis.driver_not_found'), 404);
-        }
+        if (!$driver) return $this->errorResponse(__('apis.driver_not_found'), 404);
 
-        $lastOtp = DriverOtp::where('driver_id', $driver->id)->latest()->first();
+        $otp = $driver->generate_code_otp ?? rand(1000, 9999);
+        
+        $message = __('admin.resend_otp_message', [
+            'app_name' => config('app.name'),
+            'code'     => $otp
+        ]);
 
-        // if ($lastOtp && $lastOtp->last_resend > now()->subMinutes(30)) {     /// time otp is here
-        //     return $this->errorResponse('You can only request OTP every 30 minutes.');
-        // }
-
-        if (!$lastOtp) {
-            return $this->errorResponse(__('apis.otp_not_found'));
-        }
-
-        $this->sendOtp($driver);
+        $this->sendOtp($driver, $message, $otp);
 
         return $this->successResponse(__('apis.otp_resent'));
     }
-
 
     public function forgetPassword(ForgetPasswordRequest $request)
     {
@@ -135,19 +119,21 @@ class AuthenticationController extends Controller
             $request->string('country_key')->toString(),
         );
 
-        $driver = Driver::where('phone_number', $phoneNumber)
-            ->orWhere('phone_number', $request['phone_number'])
-            ->first();
+        $driver = Driver::where('phone_number', $phoneNumber)->first();
 
-        if (!$driver) {
-            return $this->errorResponse(__('apis.driver_not_found'), 404);
-        }
+        if (!$driver) return $this->errorResponse(__('apis.driver_not_found'), 404);
 
-        $this->sendOtp($driver);
+        $otp = $driver->generate_code_otp ?? rand(1000, 9999);
+        
+        $message = __('admin.forget_password_otp_message', [
+            'app_name' => config('app.name'),
+            'code'     => $otp
+        ]);
+
+        $this->sendOtp($driver, $message, $otp);
 
         return $this->successResponse(__('apis.otp_sent'));
     }
-
 
     public function resetPassword(ResetPasswordRequest $request)
     {
@@ -156,48 +142,44 @@ class AuthenticationController extends Controller
             $request->string('country_key')->toString(),
         );
 
-        $driver = Driver::where('phone_number', $phoneNumber)
-            ->orWhere('phone_number', $request['phone_number'])
-            ->first();
+        $driver = Driver::where('phone_number', $phoneNumber)->first();
 
         if (!$driver) return $this->errorResponse(__('apis.driver_not_found'), 404);
 
+        $latestOtp = DriverOtp::where('driver_id', $driver->id)->latest()->first();
 
-        $driver->password = bcrypt($request['new_password']);
-        $driver->save();
+        if (!$latestOtp || $latestOtp->otp === null || $latestOtp->otp !== $request['otp']) {
+             return $this->errorResponse(__('apis.invalid_otp'));
+        }
+
+        $driver->update(['password' => bcrypt($request['new_password'])]);
+        $latestOtp->update(['otp' => null]);
 
         return $this->successResponse(__('apis.password_reset'));
     }
 
     public function logout(Request $request)
     {
-        $driver = Auth::guard('driver')->user();
-
-        if (!$driver) {
-            return $this->errorResponse(__('apis.unauthorized'), 401);
+        if ($request->user()) {
+            $request->user()->currentAccessToken()->delete();
         }
 
         return $this->successResponse(__('apis.logout_success'));
     }
 
-    private function sendOtp($driver)
+    private function sendOtp($driver, $message, $otp)
     {
-        $otp = $driver->generate_code_otp;
-        $message = __('admin.otp_message', ['code' => $otp]);
-
         try {
             $this->twilio->sendSMS($driver->phone_number, $message);
         } catch (\Exception $e) {
             Log::error("Twilio Driver SMS Error: " . $e->getMessage());
         }
 
-        DriverOtp::create([
-            'driver_id' => $driver->id,
-            'otp' => $otp,
-            'last_resend' => now(),
-        ]);
+        DriverOtp::updateOrCreate(
+            ['driver_id' => $driver->id],
+            ['otp' => $otp, 'last_resend' => now()]
+        );
     }
-
 
     public function vehicleType()
     {

@@ -12,10 +12,19 @@ use App\Http\Requests\Api\Driver\RegisterStep1Request;
 use App\Http\Requests\Api\Driver\RegisterStep2Request;
 use App\Http\Requests\Api\Driver\RegisterStep3Request;
 use App\Http\Requests\Api\Driver\RegisterStep4Request;
+use App\Services\TwilioService;
+use Illuminate\Support\Facades\Log;
 
 class DriverRegisterController extends Controller
 {
     use ApiResponse;
+
+    protected $twilio;
+
+    public function __construct(TwilioService $twilio)
+    {
+        $this->twilio = $twilio;
+    }
 
     public function registerStep1(RegisterStep1Request $request)
     {
@@ -90,25 +99,39 @@ class DriverRegisterController extends Controller
             return $this->errorResponse(__('apis.step1_required'));
         }
 
-        $request['status'] = "pending";
         $driver->update($request->validated());
 
         $driver->status = "pending";
         $driver->save();
 
-        $this->sendOtp($driver);
+      
+        $otp = $driver->generate_code_otp ?? rand(1000, 9999);
+        
+        $message = __('admin.register_otp_message', [
+            'app_name' => config('app.name'),
+            'code'     => $otp
+        ]);
+
+        $this->sendOtp($driver, $message, $otp);
 
         return $this->successResponse(__('apis.driver_registered_success'));
     }
 
-    private function sendOtp($driver)
+    private function sendOtp($driver, $message, $otp)
     {
-        // $otp = $driver->generate_code_otp;
+        try {
+            $this->twilio->sendSMS($driver->phone_number, $message);
+            Log::info("Driver Registration OTP sent to: " . $driver->phone_number);
+        } catch (\Exception $e) {
+            Log::error("Twilio Driver Registration Error: " . $e->getMessage());
+        }
 
-        DriverOtp::create([
-            'driver_id' => $driver->id,
-            'otp' => '4444',
-            'last_resend' => now(),
-        ]);
+        DriverOtp::updateOrCreate(
+            ['driver_id' => $driver->id],
+            [
+                'otp' => $otp,
+                'last_resend' => now(),
+            ]
+        );
     }
 }

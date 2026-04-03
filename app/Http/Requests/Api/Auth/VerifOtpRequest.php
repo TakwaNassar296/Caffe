@@ -27,7 +27,7 @@ class VerifOtpRequest extends FormRequest
         return [
             'country_key' => 'nullable|string|max:6',
             'phone_number' => 'required|string|max:20|min:4',
-            'otp'   => 'required|string|max:4|min:4|exists:verification_otps,otp',
+            'otp'   => 'required|string|max:4|min:4',
         ];
     }
 
