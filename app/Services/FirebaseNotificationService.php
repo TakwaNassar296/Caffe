@@ -16,13 +16,7 @@ class FirebaseNotificationService
         $this->credentialsPath = storage_path('app/gettin-caffe-firebase-adminsdk-fbsvc-6bfe3eefdb.json');
     }
 
-    /**
-     * @param string $title
-     * @param string $body
-     * @param string|null $target  (FCM Token OR Topic Name)
-     * @param bool $isTopic (true if sending to topic, false if sending to single token)
-     */
-    public function sendNotification($title, $body, $target = 'all', $isTopic = true)
+    public function sendNotification($title, $body, $target = 'all', $isTopic = true, $extraData = [])
     {
         if (!file_exists($this->credentialsPath)) {
             Log::error('Firebase credentials file missing', ['path' => $this->credentialsPath]);
@@ -44,18 +38,21 @@ class FirebaseNotificationService
 
             $accessToken = $accessTokenArray['access_token'];
 
-            // بناء الرسالة بناءً على الهدف (Topic أو Token)
             $messagePayload = [
                 'notification' => [
                     'title' => (string)$title,
                     'body' => (string)$body,
                 ],
+                'data' => array_map('strval', $extraData),
                 'android' => [
                     'priority' => 'high',
                 ],
                 'apns' => [
                     'payload' => [
-                        'aps' => ['sound' => 'default'],
+                        'aps' => [
+                            'sound' => 'default',
+                            'content-available' => 1
+                        ],
                     ],
                 ],
             ];
@@ -76,7 +73,7 @@ class FirebaseNotificationService
                 'json' => $payload,
             ]);
 
-            Log::info('Firebase Notification Sent Successfully to ' . ($isTopic ? 'Topic' : 'Token'));
+            Log::info('Firebase Notification Sent Successfully');
 
         } catch (Exception $e) {
             Log::error('Firebase Notification Error: ' . $e->getMessage());
