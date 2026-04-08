@@ -31,15 +31,13 @@ class ReportController extends Controller
 
         $currentMetrics = $this->calculateOrdersMetrics($currentQuery);
 
-        // Yesterday
         $yesterday = $this->getDateRange('yesterday');
         $yesterdayMetrics = $this->calculateOrdersMetrics(
             $this->getCompletedOrdersQuery($user->branch_id, $yesterday['start'], $yesterday['end'])
         );
 
-        // Last Month
-        $lastMonthStart = Carbon::now()->subMonth()->startOfMonth();
-        $lastMonthEnd = Carbon::now()->subMonth()->endOfMonth();
+        $lastMonthStart = \Carbon\Carbon::now()->subMonth()->startOfMonth();
+        $lastMonthEnd = \Carbon\Carbon::now()->subMonth()->endOfMonth();
         $lastMonthMetrics = $this->calculateOrdersMetrics(
             $this->getCompletedOrdersQuery($user->branch_id, $lastMonthStart, $lastMonthEnd)
         );
@@ -47,19 +45,52 @@ class ReportController extends Controller
         $compareYesterday = $this->calculateComparisonMetrics($currentMetrics, $yesterdayMetrics);
         $compareLastMonth = $this->calculateComparisonMetrics($currentMetrics, $lastMonthMetrics);
 
+        $materials = \App\Models\BranchMaterial::where('branch_id', $user->branch_id)
+            ->whereHas('material', function ($query) {
+                $query->where('material_type', 'internal');
+            })
+            ->with('material')
+            ->get();
+
+        $dailySettlement = $materials->map(function ($item) {
+            $expected = (float) ($item->current_quantity ?? 0);
+            $actual = (float) ($item->actual_quantity ?? 0);
+            return [
+                'name' => $item->material?->name,
+                'expected_qty' => number_format($expected, 2),
+                'actual_qty' => number_format($actual, 2),
+                'difference' => number_format($actual - $expected, 2),
+                'unit' => $item->material?->unit,
+                'status' => $expected > 0 ? 'good' : 'out_of_stock'
+            ];
+        });
+
         return $this->successResponse('Reports retrieved successfully', [
             'kpis' => [
                 'sales_amount' => [
                     'value' => round($currentMetrics['sales_amount'], 2),
-                    'change_yesterday' => $compareYesterday['sales_change'],
-                    'change_last_month' => $compareLastMonth['sales_change'],
+                    'change_yesterday' => (string) $compareYesterday['sales_change'],
+                    'change_last_month' => (string) $compareLastMonth['sales_change'],
                 ],
                 'net_revenue' => [
                     'value' => round($currentMetrics['net_revenue'], 2),
-                    'change_yesterday' => $compareYesterday['net_change'],
-                    'change_last_month' => $compareLastMonth['net_change'],
+                    'change_yesterday' => (string) $compareYesterday['net_change'],
+                    'change_last_month' => (string) $compareLastMonth['net_change'],
+                ],
+                'orders_count' => [
+                    'value' => $currentMetrics['orders_count'],
+                    'change_yesterday' => (string) $compareYesterday['orders_change'],
+                ],
+                'total_discounts' => [
+                    'value' => round($currentMetrics['discount_amount'], 2),
+                    'change_yesterday' => (string) $compareYesterday['discount_change'],
+                ],
+                'avg_order' => [
+                    'value' => round($currentMetrics['avg_after_discount'], 2),
+                    'change_yesterday' => (string) $compareYesterday['avg_after_change'],
                 ],
             ],
+            'daily_settlement' => $dailySettlement,
             'statistics_details' => [
                 array_merge(['source' => 'Delivery'],
                     $this->calculateSourceStatistics($currentQuery, 'delivery')

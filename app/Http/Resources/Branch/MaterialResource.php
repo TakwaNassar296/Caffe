@@ -34,8 +34,8 @@ class MaterialResource extends JsonResource
         'image'             => $this->material && $this->material->image
                                ? asset('storage/' . $this->material->image)
                                : asset('images/default.png'),
-        'max'               => $maxLimit,
-        'min'               => $minLimit,
+        'max'               => $this->max_limit,
+        'min'               => $this->min_limit,
     ];
 }
 

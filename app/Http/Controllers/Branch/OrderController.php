@@ -16,13 +16,14 @@ class OrderController extends Controller
 
   public function orders(Request $request)
 {
-    $branchId = Auth::user()->id;
+    $branchId = Auth::user()->branch_id;
 
     $status = $request->query('status'); 
 
     $ordersQuery = Order::whereHas('branch', function($query) use ($branchId) {
-        $query->where('branch_id', $branchId);
+        $query->where('id', $branchId); 
     });
+    
 
    
     if ($status) {

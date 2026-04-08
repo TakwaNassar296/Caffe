@@ -2,29 +2,30 @@
 
 namespace App\Http\Resources\Branch;
 
-use App\Models\EmployeePoint;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class AdminResource extends JsonResource
 {
-    /**
-     * Transform the resource into an array.
-     *
-     * @return array<string, mixed>
-     */
     public function toArray(Request $request): array
     {
+        $totalPoints = (float) ($this->points_sum_point_amount ?? 0);
+        
+        $target = 50000; 
+        $performance = ($totalPoints / $target) * 100;
+
         return [
             'id' => $this->id,
             'name' => $this->name,
             'email' => $this->email,
             'role' => $this->role,
-            'total_points' => $this->points->sum('point_amount'),
+            'total_points' => $totalPoints,
             'orders' => 3,
             'branch_id' => $this->branch_id,
-            'performance'=>24,
-            'access_token' => $this->createToken('access_token')->plainTextToken,
+            'performance' => round(min($performance, 100), 2),
+            'access_token' => $this->when($request->routeIs('login'), function() {
+                return $this->createToken('access_token')->plainTextToken;
+            }),
         ];
     }
 }
